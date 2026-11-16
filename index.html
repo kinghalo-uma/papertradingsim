@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>Bitcoin Paper Trader</title>
+  <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1220;--panel:#111c2e;--panel2:#17243a;--line:#263650;--muted:#91a2ba;--text:#eef4ff;--green:#22c58b;--red:#ff647c;--blue:#78a9ff}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+    .wrap{max-width:1200px;margin:auto;padding:28px 20px 48px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px}
+    h1{font-size:23px;margin:0;letter-spacing:-.5px}.sub{color:var(--muted);font-size:12px}.live{display:flex;align-items:center;gap:8px;color:var(--green);font-size:12px}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px #22c58b88}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}.stat-label{color:var(--muted);font-size:12px}.stat-value{font-size:21px;font-weight:650;margin-top:5px;letter-spacing:-.4px}
+    .price-line{display:flex;align-items:baseline;gap:12px;margin:8px 0 14px}.price{font-size:29px;font-weight:700;letter-spacing:-1px}.change{font-size:13px;font-weight:600}
+    .chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.tabs{display:flex;gap:5px;flex-wrap:wrap}.tabs button,.secondary{border:1px solid var(--line);background:var(--panel2);color:var(--muted);padding:6px 10px;border-radius:7px;cursor:pointer}
+    button.active{background:#24416a;border-color:#3d659b;color:white}.chart{height:360px;margin-top:10px}
+    .side h2,.panel h2{font-size:15px;margin:0 0 14px}.balance{font-size:25px;font-weight:700}.muted{color:var(--muted)}.field{margin:13px 0}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+    input{width:100%;background:#0b1525;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:11px;font:inherit;outline:none}input:focus{border-color:var(--blue)}
+    .estimate{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin:8px 0 14px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .actions button{border:0;border-radius:8px;padding:11px;font-weight:700;color:#07130f;cursor:pointer}.buy{background:var(--green)}.sell{background:var(--red);color:#21070c!important}.actions button:disabled{opacity:.4;cursor:not-allowed}
+    .notice{min-height:18px;font-size:12px;margin-top:10px;color:var(--muted)}.bottom{margin-top:16px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{text-align:right;padding:10px 8px;border-bottom:1px solid var(--line);font-size:12px}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:500}
+    .positive{color:var(--green)}.negative{color:var(--red)}.empty{text-align:center;color:var(--muted);padding:24px}
+    .footer{color:var(--muted);font-size:11px;margin-top:16px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.chart{height:300px}.wrap{padding:20px 12px 36px}.top{align-items:flex-start}.stat-value{font-size:18px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><h1>Bitcoin Paper Trader</h1><div class="sub">Practice trading BTC with virtual money · No real funds involved</div></div>
+    <div class="live"><span class="dot"></span><span id="connection">Connecting to market…</span></div>
+  </header>
+  <section class="stats">
+    <div class="panel"><div class="stat-label">Portfolio value</div><div class="stat-value" id="portfolio">$10,000.00</div></div>
+    <div class="panel"><div class="stat-label">Available USD</div><div class="stat-value" id="cash">$10,000.00</div></div>
+    <div class="panel"><div class="stat-label">BTC held</div><div class="stat-value" id="btc">0.00000000</div></div>
+  </section>
+  <div class="grid">
+    <main>
+      <section class="panel">
+        <div class="chart-head"><div><div class="muted">BTC / USDT</div><div class="price-line"><span class="price" id="price">—</span><span class="change" id="dayChange">—</span></div></div>
+          <div class="tabs" id="timeframes"><button data-tf="1m">1m</button><button data-tf="5m" class="active">5m</button><button data-tf="15m">15m</button><button data-tf="1h">1h</button><button data-tf="4h">4h</button><button data-tf="1d">1D</button></div>
+        </div>
+        <div id="chart" class="chart"></div>
+      </section>
+      <section class="panel bottom"><h2>Recent trades</h2><div class="table-wrap"><table><thead><tr><th>Time</th><th>Side</th><th>BTC</th><th>Price</th><th>Total</th></tr></thead><tbody id="trades"><tr><td colspan="5" class="empty">No trades yet. Make your first paper trade.</td></tr></tbody></table></div></section>
+    </main>
+    <aside class="panel side">
+      <h2>Place a paper trade</h2>
+      <div class="muted">Starting balance</div><div class="balance">$10,000.00</div>
+      <div class="field"><label for="amount">Amount in USD</label><input id="amount" type="number" min="1" step="any" value="100"></div>
+      <div class="estimate"><span>Estimated BTC</span><strong id="estimate">—</strong></div>
+      <div class="estimate"><span>Execution price</span><strong id="execPrice">—</strong></div>
+      <div class="actions"><button class="buy" id="buy">Buy BTC</button><button class="sell" id="sell">Sell BTC</button></div>
+      <div class="notice" id="notice" aria-live="polite">Trades use the latest displayed BTC price. A simulated 0.1% fee applies.</div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+      <div class="estimate"><span>Unrealised P&amp;L</span><strong id="pnl">$0.00</strong></div>
+      <div class="estimate"><span>Reset account</span><button class="secondary" id="reset">Reset</button></div>
+    </aside>
+  </div>
+  <div class="footer">Market data: Binance public BTC/USDT feed. Paper trades are stored in this browser only. This is a learning simulator, not financial advice.</div>
+</div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const FEE = 0.001, STARTING_CASH = 10000;
+  let price = 0, dayChange = 0, timeframe = '5m', candles = [], chart, candleSeries, socket, reconnectTimer;
+  let account = loadAccount();
+  function loadAccount(){try{return JSON.parse(localStorage.getItem('btc-paper-account')) || {cash:STARTING_CASH,btc:0,cost:0,trades:[]}}catch{return {cash:STARTING_CASH,btc:0,cost:0,trades:[]}}}
+  function save(){localStorage.setItem('btc-paper-account',JSON.stringify(account));renderAccount()}
+  const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
+  function renderAccount(){
+    $('cash').textContent=money(account.cash);$('btc').textContent=account.btc.toFixed(8);
+    $('portfolio').textContent=money(account.cash+account.btc*price);
+    $('pnl').textContent=money(account.btc*price-account.cost);
+    $('pnl').className=(account.btc*price-account.cost)>=0?'positive':'negative';
+    $('trades').innerHTML=account.trades.length?account.trades.slice().reverse().slice(0,20).map(t=>'<tr><td>'+new Date(t.time).toLocaleString()+'</td><td class="'+(t.side==='BUY'?'positive':'negative')+'">'+t.side+'</td><td>'+t.btc.toFixed(8)+'</td><td>'+money(t.price)+'</td><td>'+money(t.total)+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">No trades yet. Make your first paper trade.</td></tr>';
+    updateEstimate();
+  }
+  function updateEstimate(){const amount=Number($('amount').value)||0;$('estimate').textContent=price>0?(amount/price).toFixed(8)+' BTC':'—';$('execPrice').textContent=price>0?money(price):'—';$('buy').disabled=!price||amount<=0||amount*(1+FEE)>account.cash;$('sell').disabled=!price||amount<=0||amount/price>account.btc;}
+  $('amount').addEventListener('input',updateEstimate);
+  function trade(side){
+    const amount=Number($('amount').value);
+    if(!price||!Number.isFinite(amount)||amount<=0)return;
+    const qty=amount/price, fee=amount*FEE;
+    if(side==='BUY'){
+      if(amount+fee>account.cash)return message('Not enough USD for this trade.','negative');
+      account.cash-=amount+fee;account.btc+=qty;account.cost+=amount+fee;
+    }else{
+      if(qty>account.btc)return message('You do not hold enough BTC.','negative');
+      const avgCost=account.btc?account.cost*(qty/account.btc):0;
+      account.cash+=amount-fee;account.btc-=qty;account.cost=Math.max(0,account.cost-avgCost);
+    }
+    account.trades.push({side,btc:qty,price,total:amount,time:Date.now()});save();message(side+' order filled at '+money(price)+'.','positive');
+  }
+  function message(text,cls){$('notice').textContent=text;$('notice').className='notice '+(cls||'')}
+  $('buy').onclick=()=>trade('BUY');$('sell').onclick=()=>trade('SELL');
+  $('reset').onclick=()=>{if(confirm('Reset your paper account to $10,000 and delete trade history?')){account={cash:STARTING_CASH,btc:0,cost:0,trades:[]};save();message('Paper account reset.')}};
+  function initChart(){
+    chart=LightweightCharts.createChart($('chart'),{layout:{background:{color:'#111c2e'},textColor:'#91a2ba'},grid:{vertLines:{color:'#1d2b41'},horzLines:{color:'#1d2b41'}},rightPriceScale:{borderColor:'#263650'},timeScale:{borderColor:'#263650',timeVisible:true,secondsVisible:false},crosshair:{mode:1},width:$('chart').clientWidth,height:$('chart').clientHeight});
+    candleSeries=chart.addCandlestickSeries({upColor:'#22c58b',downColor:'#ff647c',borderUpColor:'#22c58b',borderDownColor:'#ff647c',wickUpColor:'#22c58b',wickDownColor:'#ff647c'});
+    new ResizeObserver(()=>chart.applyOptions({width:$('chart').clientWidth,height:$('chart').clientHeight})).observe($('chart'));
+  }
+  async function loadCandles(){
+    try{const res=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval='+timeframe+'&limit=180');if(!res.ok)throw Error('Market data unavailable');const data=await res.json();candles=data.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4]}));candleSeries.setData(candles);chart.timeScale().fitContent();}catch(e){message('Could not load candles. Check your connection or try again.');}
+  }
+  function connect(){
+    clearTimeout(reconnectTimer);if(socket)socket.close();
+    socket=new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker/btcusdt@kline_'+timeframe);
+    socket.onopen=()=>$('connection').textContent='Live market data';
+    socket.onmessage=event=>{const msg=JSON.parse(event.data);if(msg.e==='24hrTicker'){price=+msg.c;dayChange=+msg.P;$('price').textContent=money(price);$('dayChange').textContent=(dayChange>=0?'+':'')+dayChange.toFixed(2)+'%';$('dayChange').className='change '+(dayChange>=0?'positive':'negative');renderAccount()}else if(msg.e==='kline'){const k=msg.k,c={time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c};if(candles.length&&candles[candles.length-1].time===c.time)candles[candles.length-1]=c;else candles.push(c);candleSeries.update(c)}};
+    socket.onclose=()=>{$('connection').textContent='Reconnecting…';reconnectTimer=setTimeout(connect,3000)};
+    socket.onerror=()=>socket.close();
+  }
+  $('timeframes').addEventListener('click',e=>{const b=e.target.closest('button[data-tf]');if(!b)return;timeframe=b.dataset.tf;document.querySelectorAll('#timeframes button').forEach(x=>x.classList.toggle('active',x===b));loadCandles().then(connect)});
+  initChart();loadCandles().then(connect);renderAccount();
+})();
+</script>
+</body>
+</html>
